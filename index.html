@@ -1,1 +1,774 @@
+HTML
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07080c">
+<title>Mo‘jizalar bog‘i: Yashirin darvoza</title>
+<style>
+:root {
+  --gold:#e3c274;
+  --muted:#b9ab86;
+  --panel:rgba(7,8,12,.88);
+}
+* {
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  -webkit-user-select:none;
+}
+html,body {
+  margin:0;width:100%;height:100%;
+  overflow:hidden;overscroll-behavior:none;
+  touch-action:none;background:#07080c;
+  color:#e8dfc8;
+  font-family:Georgia,"Times New Roman",serif;
+}
+canvas {
+  position:fixed;inset:0;width:100%;height:100%;
+  display:block;touch-action:none;
+}
+.scr {
+  position:fixed;inset:0;z-index:20;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:24px;
+  background:radial-gradient(ellipse at 50% 38%,#1d1911,#07080c 72%);
+}
+.scr.on{display:flex}
+h1 {
+  font-weight:400;font-size:clamp(30px,9vw,58px);
+  letter-spacing:.025em;margin:0;color:var(--gold);
+  line-height:1.1;
+}
+h2 {
+  font-weight:400;font-size:clamp(18px,5vw,27px);
+  margin:10px 0 22px;color:var(--muted);font-style:italic;
+}
+p {
+  max-width:34em;line-height:1.6;margin:7px 0;
+  color:var(--muted);font-size:14px;
+}
+.btn {
+  font:inherit;font-size:17px;color:#14110a;
+  background:var(--gold);border:0;border-radius:6px;
+  padding:15px 25px;margin:8px;min-width:220px;
+}
+.btn.alt {background:transparent;color:var(--gold);border:1px solid #6d5a2c}
+.small{font-size:11px;color:#887e67}
+#hud {
+  position:fixed;inset:0;z-index:5;
+  pointer-events:none;display:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+#hud.on{display:block}
+#stage {
+  position:absolute;left:15px;top:14px;
+  font-size:13px;color:var(--gold);
+  text-shadow:0 2px 6px #000;
+  max-width:70%;
+}
+#objective {
+  display:block;margin-top:5px;font-size:11px;
+  color:#c2b99f;
+}
+#menu {
+  position:absolute;right:14px;top:10px;
+  pointer-events:auto;font:inherit;font-size:14px;
+  color:var(--gold);background:#0009;
+  border:1px solid #6d5a2c;border-radius:6px;
+  padding:10px 15px;
+}
+#toast {
+  position:absolute;left:10%;right:10%;top:22%;
+  text-align:center;font-size:clamp(17px,5vw,24px);
+  color:var(--gold);text-shadow:0 2px 9px #000;
+  opacity:0;transition:opacity .3s;
+}
+#toast.on{opacity:1}
+#crosshair {
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  color:#e3c274a8;font:22px Arial;
+  text-shadow:0 0 10px #8addec;
+}
+#look {
+  position:fixed;inset:0;z-index:2;
+  touch-action:none;
+}
+#joy {
+  position:absolute;left:22px;bottom:28px;
+  width:126px;height:126px;border-radius:50%;
+  border:2px solid #e3c27466;background:#0006;
+  pointer-events:auto;touch-action:none;
+}
+#knob {
+  position:absolute;left:33px;top:33px;
+  width:56px;height:56px;border-radius:50%;
+  background:#e3c27455;border:2px solid var(--gold);
+  box-shadow:0 0 16px #e3c27433;
+}
+#act {
+  position:absolute;right:20px;bottom:35px;
+  width:116px;min-height:70px;border-radius:38px;
+  padding:10px;font:inherit;font-size:14px;
+  color:#14110a;background:var(--gold);border:0;
+  pointer-events:auto;display:none;touch-action:none;
+  box-shadow:0 0 22px #e3c27455;
+}
+#act.on{display:block}
+#run {
+  position:absolute;right:29px;bottom:125px;
+  width:67px;height:48px;border-radius:24px;
+  background:#0b0b0bcc;color:var(--gold);
+  border:1px solid #e3c27488;font:inherit;font-size:12px;
+  pointer-events:auto;touch-action:none;
+}
+#fade {
+  position:fixed;inset:0;z-index:15;
+  background:#000;opacity:0;pointer-events:none;
+  transition:opacity .55s;
+}
+#fade.on{opacity:1}
+@media(min-width:750px){
+  #joy{width:140px;height:140px;left:30px;bottom:30px}
+  #knob{left:39px;top:39px}
+  #act{right:32px;bottom:40px}
+  #run{right:55px;bottom:135px}
+}
+</style>
+</head>
+<body>
+
+<div id="look"></div>
+<div id="fade"></div>
+
+<div id="hud">
+  <div id="stage">
+    MO‘JIZALAR BOG‘I
+    <span id="objective">1/2 · O‘lim poyezdi</span>
+  </div>
+  <button id="menu">Ⅱ Menyu</button>
+  <div id="toast"></div>
+  <div id="crosshair">＋</div>
+  <div id="joy"><div id="knob"></div></div>
+  <button id="run">YUGURISH</button>
+  <button id="act">TEKSHIR</button>
+</div>
+
+<div class="scr on" id="load">
+  <h2>Sirli olam uyg‘onmoqda…</h2>
+  <p>Yorug‘liklar va qadimiy yo‘llar tayyorlanmoqda.</p>
+</div>
+
+<div class="scr" id="start">
+  <p class="small">TINY WORLD · 3D SARGUZASHT</p>
+  <h1>Mo‘jizalar bog‘i</h1>
+  <h2>Yashirin darvoza</h2>
+  <p>O‘lim poyezdidan o‘t. Qorong‘i g‘orning sirlarini och. Yo‘lingni o‘zing top.</p>
+  <button class="btn" id="startBtn">SARGUZASHTNI BOSHLASH</button>
+  <p class="small">Telefon: joystick bilan yur, ekranni surib atrofga qara.</p>
+</div>
+
+<div class="scr" id="pause">
+  <h1>Pauza</h1>
+  <h2>Sarguzasht kutmoqda…</h2>
+  <button class="btn" id="resume">DAVOM ETISH</button>
+  <button class="btn alt" id="restart">QAYTA BOSHLASH</button>
+  <button class="btn alt" id="home">ASOSIY MENYU</button>
+</div>
+
+<div class="scr" id="ending">
+  <p class="small">BIRINCHI BOB YAKUNI</p>
+  <h1>G‘or siri</h1>
+  <h2>Yo‘l davom etadi…</h2>
+  <p>Sen zulmat ichidan chiqish yo‘lini topding. Oldinda tashlandiq qishloq va Yashirin darvoza kutmoqda.</p>
+  <button class="btn" id="playAgain">QAYTA O‘YNASH</button>
+</div>
+
+<div class="scr" id="error">
+  <h1>Xatolik</h1>
+  <p id="errorText">3D muhit yuklanmadi. Internetni tekshirib, sahifani yangila.</p>
+  <button class="btn" onclick="location.reload()">QAYTA YUKLASH</button>
+</div>
+
+<script>
+(async function(){
+try {
+const THREE = await import(
+  'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js'
+);
+
+const $ = id => document.getElementById(id);
+const screens = ['load','start','pause','ending','error'];
+function showScreen(id){
+  screens.forEach(s => $(s).classList.toggle('on',s===id));
+  $('hud').classList.toggle('on',id==='');
+}
+function toast(message){
+  $('toast').textContent=message;
+  $('toast').classList.add('on');
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>$('toast').classList.remove('on'),2400);
+}
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101923);
+scene.fog = new THREE.FogExp2(0x101923,.023);
+
+const camera = new THREE.PerspectiveCamera(
+  72,innerWidth/innerHeight,.1,150
+);
+camera.rotation.order='YXZ';
+
+const renderer = new THREE.WebGLRenderer({
+  antialias:true,alpha:false,powerPreference:'high-performance'
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.1;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xa7c3d7,0x18130e,1.25));
+
+const sun = new THREE.DirectionalLight(0xffd9a0,1.7);
+sun.position.set(-7,12,5);
+sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+scene.add(sun);
+
+const material=(color,roughness=.85,metalness=0)=>
+  new THREE.MeshStandardMaterial({color,roughness,metalness});
+
+const M={
+  ground:material(0x20272b),
+  steel:material(0x56616a,.42,.65),
+  rust:material(0x704235,.75,.2),
+  wood:material(0x49362a),
+  stone:material(0x41474a),
+  darkStone:material(0x202a31),
+  gold:material(0xd2a64f,.42,.35),
+  dark:material(0x10151b),
+  cloth:material(0x283b50),
+  skin:material(0xc59775),
+  leaf:material(0x293f32),
+  blue:new THREE.MeshStandardMaterial({
+    color:0x72ddec,emissive:0x167d99,
+    emissiveIntensity:1.6,roughness:.28
+  }),
+  amber:new THREE.MeshStandardMaterial({
+    color:0xffd38b,emissive:0xb85b12,
+    emissiveIntensity:1.5
+  })
+};
+
+const world=new THREE.Group();
+scene.add(world);
+
+const animated=[];
+const targets=[];
+const blockers=[];
+const movingLights=[];
+
+let stage=0;
+let playing=false;
+let currentTarget=null;
+let runHeld=false;
+let walkTime=0;
+let elapsed=0;
+
+const player={x:0,y:1.65,z:5,yaw:0,pitch:0,speed:3.2};
+
+function addMesh(geometry,mat,x,y,z,options={}){
+  const o=new THREE.Mesh(geometry,mat);
+  o.position.set(x,y,z);
+  o.castShadow=true;
+  o.receiveShadow=true;
+  o.rotation.set(
+    options.rx||0,options.ry||0,options.rz||0
+  );
+  if(options.sx)o.scale.x=options.sx;
+  if(options.sy)o.scale.y=options.sy;
+  if(options.sz)o.scale.z=options.sz;
+  world.add(o);
+  if(options.solid){
+    blockers.push({
+      x,z,hx:(options.w||1)/2,hz:(options.d||1)/2
+    });
+  }
+  if(options.anim) animated.push({
+    obj:o,kind:options.anim,baseY:y,phase:Math.random()*6.28
+  });
+  return o;
+}
+function box(x,y,z,w,h,d,mat,solid=false,anim=null){
+  return addMesh(new THREE.BoxGeometry(w,h,d),mat,x,y,z,{
+    solid,w,d,anim
+  });
+}
+function cylinder(x,y,z,rt,rb,h,mat,segments=8,anim=null){
+  return addMesh(
+    new THREE.CylinderGeometry(rt,rb,h,segments),
+    mat,x,y,z,{anim}
+  );
+}
+function orb(x,y,z,r,mat,anim=null){
+  return addMesh(new THREE.SphereGeometry(r,8,7),mat,x,y,z,{anim});
+}
+function light(x,y,z,color,intensity=1.3,distance=9){
+  const l=new THREE.PointLight(color,intensity,distance);
+  l.position.set(x,y,z);
+  world.add(l);
+  movingLights.push({light:l,power:intensity,phase:Math.random()*8});
+  return l;
+}
+function clearWorld(){
+  while(world.children.length)world.remove(world.children[0]);
+  animated.length=0;
+  targets.length=0;
+  blockers.length=0;
+  movingLights.length=0;
+  currentTarget=null;
+}
+function addFloor(width,depth,mat){
+  box(0,-.25,-depth/2,width,.5,depth,mat);
+}
+function addTarget(x,z,label,action,range=2.7){
+  const ring=addMesh(
+    new THREE.TorusGeometry(.58,.055,8,24),
+    M.gold,x,1.25,z,{anim:'ring'}
+  );
+  targets.push({x,z,label,action,range,obj:ring});
+}
+function addParticles(count,width,depth,color){
+  const positions=new Float32Array(count*3);
+  const speeds=[];
+  for(let i=0;i<count;i++){
+    positions[i*3]=(Math.random()-.5)*width;
+    positions[i*3+1]=Math.random()*4.7+.2;
+    positions[i*3+2]=-Math.random()*depth;
+    speeds.push(.15+Math.random()*.45);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  const points=new THREE.Points(geo,new THREE.PointsMaterial({
+    color,size:.055,transparent:true,opacity:.7,depthWrite:false
+  }));
+  world.add(points);
+  animated.push({obj:points,kind:'particles',speeds});
+}
+
+function buildRails(){
+  for(const x of [-1.12,1.12]){
+    box(x,-.02,-25,.13,.16,54,M.steel);
+  }
+  for(let z=3;z>-52;z-=1.55){
+    box(0,-.15,z,3.1,.18,.24,M.wood);
+  }
+  for(const x of [-3.6,3.6]){
+    for(let z=0;z>-48;z-=8){
+      box(x,2,z,.35,4,.45,M.stone);
+      box(x,4.05,z,.5,.2,.7,M.steel);
+    }
+  }
+  for(let z=0;z>-49;z-=8){
+    box(0,4.4,z,7.4,.16,.18,M.steel);
+  }
+}
+function trainCar(x,z,mat){
+  box(x,1,z,2.05,1.8,4,mat,true);
+  box(x,1.95,z,2.2,.16,4.15,M.steel);
+  for(const dx of [-.72,.72]){
+    for(const dz of [-1.2,1.2]){
+      cylinder(x+dx,.22,z+dz,.24,.24,.16,M.dark,10);
+    }
+    box(x+dx,1.15,z-2.04,.16,.45,.08,M.amber);
+    light(x+dx,1.2,z-2.35,0xffa44c,.45,3.8);
+  }
+}
+function makePerson(x,z){
+  const person=new THREE.Group();
+  person.position.set(x,0,z);
+  world.add(person);
+
+  const torso=new THREE.Mesh(
+    new THREE.CapsuleGeometry(.25,.55,4,7),M.cloth
+  );
+  torso.position.y=1.1;
+  person.add(torso);
+
+  const head=new THREE.Mesh(
+    new THREE.SphereGeometry(.21,10,8),M.skin
+  );
+  head.position.y=1.62;
+  person.add(head);
+
+  const hair=new THREE.Mesh(
+    new THREE.SphereGeometry(.22,9,7,0,Math.PI*2,0,Math.PI*.65),
+    M.dark
+  );
+  hair.position.y=1.72;
+  person.add(hair);
+
+  const limbs=[];
+  for(const side of [-1,1]){
+    const leg=new THREE.Mesh(
+      new THREE.CapsuleGeometry(.09,.42,3,6),M.steel
+    );
+    leg.position.set(side*.13,.42,0);
+    person.add(leg);
+    limbs.push(leg);
+
+    const arm=new THREE.Mesh(
+      new THREE.CapsuleGeometry(.065,.37,3,6),M.cloth
+    );
+    arm.position.set(side*.32,1.12,0);
+    arm.rotation.z=side*.15;
+    person.add(arm);
+    limbs.push(arm);
+  }
+  animated.push({obj:person,kind:'person',limbs,phase:Math.random()*6});
+  return person;
+}
+
+function buildTrain(){
+  clearWorld();
+  stage=0;
+  scene.background.set(0x111a25);
+  scene.fog=new THREE.FogExp2(0x111a25,.022);
+  sun.color.set(0xc8d8e5);
+  sun.intensity=1.25;
+
+  addFloor(12,64,material(0x191d22));
+  buildRails();
+
+  for(let z=-5;z>-40;z-=11){
+    trainCar(z%22===0?-2.2:2.2,z,z%3?M.rust:M.steel);
+  }
+
+  for(let z=-5;z>-48;z-=8){
+    light(0,3.65,z,0xffa75b,1.2,9);
+    orb(0,3.55,z,.12,M.amber,'lamp');
+  }
+
+  for(let i=0;i<18;i++){
+    const x=(Math.random()-.5)*5;
+    const z=-Math.random()*46;
+    orb(x,.5+Math.random()*2,z,.045+Math.random()*.06,M.amber,'ember');
+  }
+
+  addParticles(100,10,54,0xc0b69c);
+  makePerson(-2.3,-14);
+  addTarget(0,-49,'Poyezd yo‘lining oxiri','next',3.3);
+
+  player.x=0;player.z=5;player.yaw=0;player.pitch=0;
+  $('objective').textContent='1/2 · O‘lim poyezdi';
+  toast('O‘lim poyezdi. Yo‘lni top.');
+}
+
+function rock(x,y,z,sx,sy,sz){
+  const o=addMesh(
+    new THREE.DodecahedronGeometry(1,0),M.stone,x,y,z
+  );
+  o.scale.set(sx,sy,sz);
+  o.rotation.set(Math.random(),Math.random(),Math.random());
+  return o;
+}
+function buildCave(){
+  clearWorld();
+  stage=1;
+  scene.background.set(0x06131b);
+  scene.fog=new THREE.FogExp2(0x06131b,.031);
+  sun.color.set(0x72bbd0);
+  sun.intensity=.7;
+
+  addFloor(18,65,material(0x20282b));
+
+  for(let z=3;z>-60;z-=3.8){
+    const width=6.1+Math.sin(z*.31)*.7;
+    for(const side of [-1,1]){
+      rock(side*width,1.15,z,1.1+Math.random()*.5,
+           1.4+Math.random()*1.3,2.2);
+      if(Math.random()>.35){
+        rock(side*(width-.5),3.2,z-1,.55,.75,1);
+      }
+    }
+    rock((Math.random()-.5)*3,5.1,z,1.1,.45,1.5);
+  }
+
+  for(let i=0;i<16;i++){
+    const x=(Math.random()-.5)*11;
+    const z=-4-i*3;
+    const crystal=cylinder(
+      x,.45,z,.12,.32,.9,M.blue,6,'crystal'
+    );
+    crystal.rotation.z=(Math.random()-.5)*.35;
+    light(x,.9,z,0x3dcce8,.65,5.5);
+  }
+
+  for(let i=0;i<7;i++){
+    const x=(i%2?1:-1)*(2.1+Math.random()*2.4);
+    const z=-5-i*6;
+    orb(x,1.45,z,.12,M.amber,'lamp');
+    light(x,1.5,z,0x72d9ed,1.0,7);
+  }
+
+  addParticles(145,15,61,0x86d8e7);
+  makePerson(2,-18);
+  addTarget(0,-53,'G‘or chiqishi','finish',3.4);
+
+  player.x=0;player.z=5;player.yaw=0;player.pitch=0;
+  $('objective').textContent='2/2 · Qorong‘i g‘or';
+  toast('Qorong‘i g‘or. Kristallar yo‘l ko‘rsatadi.');
+}
+
+function isBlocked(x,z){
+  return blockers.some(b=>
+    Math.abs(x-b.x)<b.hx+.27 &&
+    Math.abs(z-b.z)<b.hz+.27
+  );
+}
+
+function switchStage(){
+  $('fade').classList.add('on');
+  setTimeout(()=>{
+    buildCave();
+    $('fade').classList.remove('on');
+  },550);
+}
+
+function interact(){
+  if(!playing)return;
+  if(currentTarget){
+    if(currentTarget.action==='next'){
+      switchStage();
+    }else{
+      playing=false;
+      showScreen('ending');
+    }
+  }else{
+    toast('Belgiga yaqinlashib, yana tekshir.');
+  }
+}
+
+function startGame(){
+  $('fade').classList.remove('on');
+  buildTrain();
+  showScreen('');
+  playing=true;
+  toast('Sarguzasht boshlandi!');
+}
+function home(){
+  playing=false;
+  showScreen('start');
+}
+$('startBtn').onclick=startGame;
+$('resume').onclick=()=>{showScreen('');playing=true};
+$('restart').onclick=startGame;
+$('home').onclick=home;
+$('playAgain').onclick=startGame;
+$('menu').onclick=()=>{if(playing){playing=false;showScreen('pause')}};
+$('act').addEventListener('pointerdown',e=>{e.preventDefault();interact()});
+
+const keys={};
+window.addEventListener('keydown',e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(e.key.toLowerCase()==='e')interact();
+  if(e.key==='Escape'&&playing){playing=false;showScreen('pause')}
+});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+const joy=$('joy'),knob=$('knob');
+let joyId=null,joyX=0,joyY=0;
+function moveKnob(e){
+  const r=joy.getBoundingClientRect();
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  let dx=e.clientX-cx,dy=e.clientY-cy;
+  const max=39,dist=Math.hypot(dx,dy)||1;
+  if(dist>max){dx=dx/dist*max;dy=dy/dist*max}
+  knob.style.left=(33+dx)+'px';
+  knob.style.top=(33+dy)+'px';
+  joyX=dx/max;
+  joyY=dy/max;
+}
+function resetKnob(){
+  joyId=null;joyX=0;joyY=0;
+  knob.style.left='33px';knob.style.top='33px';
+}
+joy.addEventListener('pointerdown',e=>{
+  e.preventDefault();joyId=e.pointerId;
+  joy.setPointerCapture(e.pointerId);moveKnob(e);
+});
+joy.addEventListener('pointermove',e=>{
+  if(e.pointerId===joyId)moveKnob(e);
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>
+  joy.addEventListener(ev,resetKnob)
+);
+
+$('run').addEventListener('pointerdown',e=>{
+  e.preventDefault();runHeld=true;
+});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>
+  $('run').addEventListener(ev,()=>runHeld=false)
+);
+
+let lookId=null,lastX=0,lastY=0;
+const look=$('look');
+look.addEventListener('pointerdown',e=>{
+  if(e.clientX<innerWidth*.30)return;
+  if(e.target.closest('button'))return;
+  lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;
+  look.setPointerCapture(e.pointerId);
+});
+look.addEventListener('pointermove',e=>{
+  if(lookId!==e.pointerId||!playing)return;
+  const dx=e.clientX-lastX,dy=e.clientY-lastY;
+  lastX=e.clientX;lastY=e.clientY;
+  player.yaw-=dx*.004;
+  player.pitch=Math.max(-1.05,Math.min(1.05,player.pitch-dy*.003));
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>
+  look.addEventListener(ev,()=>lookId=null)
+);
+
+renderer.domElement.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button===0){
+    lastX=e.clientX;lastY=e.clientY;lookId='mouse';
+  }
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(lookId!=='mouse'||!playing)return;
+  player.yaw-=(e.clientX-lastX)*.003;
+  player.pitch=Math.max(-1.05,Math.min(1.05,
+    player.pitch-(e.clientY-lastY)*.003));
+  lastX=e.clientX;lastY=e.clientY;
+});
+window.addEventListener('pointerup',()=>{if(lookId==='mouse')lookId=null});
+
+function update(dt,t){
+  if(playing){
+    let forward=0,side=0;
+    if(keys.w||keys.arrowup)forward++;
+    if(keys.s||keys.arrowdown)forward--;
+    if(keys.d||keys.arrowright)side++;
+    if(keys.a||keys.arrowleft)side--;
+    forward+=-joyY;
+    side+=joyX;
+
+    const length=Math.hypot(forward,side);
+    if(length>1){forward/=length;side/=length}
+
+    const speed=player.speed*(runHeld||keys.shift?1.65:1);
+    const dx=(-Math.sin(player.yaw)*forward+
+              Math.cos(player.yaw)*side)*speed*dt;
+    const dz=(-Math.cos(player.yaw)*forward-
+              Math.sin(player.yaw)*side)*speed*dt;
+
+    if(!isBlocked(player.x+dx,player.z))player.x+=dx;
+    if(!isBlocked(player.x,player.z+dz))player.z+=dz;
+
+    player.x=Math.max(-7,Math.min(7,player.x));
+    player.z=Math.max(-58,Math.min(8,player.z));
+    walkTime+=dt*(Math.abs(forward)+Math.abs(side));
+
+    camera.position.set(
+      player.x,
+      player.y+((forward||side)?Math.sin(walkTime*10)*.035:0),
+      player.z
+    );
+    camera.rotation.set(player.pitch,player.yaw,0);
+
+    currentTarget=null;
+    let closest=100;
+    for(const target of targets){
+      target.obj.rotation.z=t*.65;
+      target.obj.position.y=1.25+Math.sin(t*2)*.08;
+      const d=Math.hypot(player.x-target.x,player.z-target.z);
+      if(d<target.range&&d<closest){
+        closest=d;currentTarget=target;
+      }
+    }
+    $('act').classList.toggle('on',!!currentTarget);
+    if(currentTarget){
+      $('act').textContent=currentTarget.action==='next'?
+        'KEYINGI BOSQICH':'G‘ORDAN CHIQISH';
+    }else{
+      $('act').textContent='TEKSHIR';
+    }
+  }
+
+  for(const a of animated){
+    if(a.kind==='lamp'){
+      a.obj.scale.setScalar(1+Math.sin(t*4+a.phase)*.08);
+    }
+    if(a.kind==='ember'){
+      a.obj.position.y+=Math.sin(t*2+a.phase)*.001;
+    }
+    if(a.kind==='crystal'){
+      a.obj.rotation.y+=dt*.24;
+    }
+    if(a.kind==='person'){
+      a.obj.position.y=Math.sin(t*2+a.phase)*.025;
+      a.limbs.forEach((limb,i)=>{
+        limb.rotation.x=Math.sin(t*2.5+a.phase+i)*.12;
+      });
+    }
+    if(a.kind==='particles'){
+      const attr=a.obj.geometry.attributes.position;
+      for(let i=0;i<attr.count;i++){
+        let y=attr.getY(i)+dt*a.speeds[i]*.18;
+        if(y>5)y=.15;
+        attr.setY(i,y);
+      }
+      attr.needsUpdate=true;
+    }
+  }
+  for(const l of movingLights){
+    l.light.intensity=l.power*(.85+.15*Math.sin(t*3+l.phase));
+  }
+}
+
+const timer=new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(timer.getDelta(),.04);
+  elapsed+=dt;
+  update(dt,elapsed);
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+buildTrain();
+camera.position.set(player.x,player.y,player.z);
+showScreen('load');
+renderer.render(scene,camera);
+$('load').classList.remove('on');
+$('start').classList.add('on');
+frame();
+
+} catch(error) {
+  console.error('O‘yin yuklanmadi:',error);
+  document.getElementById('load').classList.remove('on');
+  document.getElementById('error').classList.add('on');
+  document.getElementById('errorText').textContent=
+    '3D kutubxona yuklanmadi. Internet aloqasini tekshir va sahifani qayta yukla. Tafsilot: '+error.message;
+}
+})();
+</script>
+</body>
+</html>
 
